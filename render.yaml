@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: tranam
+    name: tranam-docker
     env: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /
     envVars:
       - key: PORT
         value: 8000
+    healthCheckPath: /
