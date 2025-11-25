@@ -28,8 +28,6 @@ requests==2.32.3
 # Environment variables
 python-dotenv==1.0.1
 
-# File & uploads
-Pillow==10.3.0
 
 # Threading-safe queues / helpers (built-in but safe to keep)
 blinker==1.7.0
