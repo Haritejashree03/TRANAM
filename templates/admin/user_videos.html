@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+{% block title %}Media - {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <h2 class="mb-4" style="color: var(--primary-pink);">
+      <i class="fas fa-photo-video"></i> Media for {{ user.name }}
+    </h2>
+  </div>
+</div>
+
+<div class="row">
+  {% if videos %}
+    {% for v in videos %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+
+          <h6>{{ v.name if v.name else v.filename }}</h6>
+
+          <div class="ratio ratio-16x9 mb-2">
+            <video controls style="width:100%; border-radius:8px;">
+              <source src="{{ url_for('serve_video', filename=v.filename) }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+          <small class="text-muted">
+            Uploaded: {{ v.created_at.strftime('%Y-%m-%d %H:%M') }}
+          </small>
+
+          <a href="{{ url_for('serve_video', filename=v.filename) }}"
+             class="btn btn-outline-primary btn-sm mt-2"
+             download>
+            <i class="fas fa-download"></i> Download
+          </a>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12 text-center py-5">
+      <i class="fas fa-photo-video fa-3x text-muted mb-3"></i>
+      <h5>No Media Found</h5>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

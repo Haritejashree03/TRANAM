@@ -1,0 +1,435 @@
+{% extends "admin/base.html" %}
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<h2 style="color: var(--primary-pink);">
+    <i class="fas fa-cog"></i> System Settings
+</h2>
+
+<!-- SUCCESS ALERT -->
+<div id="sysAlert"></div>
+
+<div class="row mt-4">
+
+    <!-- SECURITY SETTINGS -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header fw-bold">
+                <i class="fas fa-shield-alt"></i> Security Settings
+            </div>
+            <div class="list-group list-group-flush">
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                    <i class="fas fa-user-lock me-2"></i> Change Admin Password
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        onclick="toggleSetting('allow_registrations')">
+                    <i class="fas fa-ban me-2"></i> Disable New User Registrations
+                </button>
+
+                <button class="list-group-item list-group-item-action text-danger"
+                        onclick="forceLogout()">
+                    <i class="fas fa-sign-out-alt me-2"></i> Force Logout All Users
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SYSTEM CONFIGURATION -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header fw-bold">
+                <i class="fas fa-tools"></i> System Configuration
+            </div>
+            <div class="list-group list-group-flush">
+
+                <button class="list-group-item list-group-item-action"
+                        onclick="backupDatabase()">
+                    <i class="fas fa-database me-2"></i> Backup Database
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#restoreModal">
+                    <i class="fas fa-history me-2"></i> Restore From Backup
+                </button>
+
+                <button class="list-group-item list-group-item-action text-danger"
+                        onclick="cleanOldMedia()">
+                    <i class="fas fa-trash me-2"></i> Clean Old Media & Logs
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="row">
+
+    <!-- NOTIFICATION SETTINGS -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header fw-bold">
+                <i class="fas fa-bell"></i> Notification Settings
+            </div>
+
+            <div class="list-group list-group-flush">
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#smtpModal">
+                    <i class="fas fa-envelope me-2"></i> Configure Email SMTP
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#smsModal">
+                    <i class="fas fa-sms me-2"></i> Configure SMS Gateway
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        onclick="toggleSetting('nearby_alerts')">
+                    <i class="fas fa-bullhorn me-2"></i> Toggle Nearby User Alerts
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- TRACKING SETTINGS -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header fw-bold">
+                <i class="fas fa-map-marker-alt"></i> Tracking Settings
+            </div>
+            <div class="list-group list-group-flush">
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#gpsModal">
+                    <i class="fas fa-clock me-2"></i> Set GPS Refresh Interval
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        onclick="toggleSetting('live_video')">
+                    <i class="fas fa-video me-2"></i> Enable / Disable Live Video
+                </button>
+
+                <button class="list-group-item list-group-item-action"
+                        data-bs-toggle="modal" data-bs-target="#sosRetryModal">
+                    <i class="fas fa-redo me-2"></i> SOS Retry Settings
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+<!-- ========================= -->
+<!-- PASSWORD MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="changePasswordModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header"><h5>Change Admin Password</h5></div>
+
+      <div class="modal-body">
+        <input id="newPass" type="password" class="form-control mb-2" placeholder="New Password">
+        <input id="confirmPass" type="password" class="form-control" placeholder="Confirm Password">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="changePassword()">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================= -->
+<!-- SMTP MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="smtpModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header"><h5>Email SMTP Settings</h5></div>
+
+      <div class="modal-body">
+        <input id="smtp_host" class="form-control mb-2" placeholder="SMTP Host">
+        <input id="smtp_port" class="form-control mb-2" placeholder="SMTP Port">
+        <input id="smtp_user" class="form-control mb-2" placeholder="Email Username">
+        <input id="smtp_pass" class="form-control mb-2" placeholder="Email Password">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="saveSMTP()">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================= -->
+<!-- SMS MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="smsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header"><h5>SMS Gateway Settings</h5></div>
+
+      <div class="modal-body">
+        <input id="sms_api" class="form-control mb-2" placeholder="API Key">
+        <input id="sms_sender" class="form-control mb-2" placeholder="Sender ID">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="saveSMS()">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================= -->
+<!-- GPS INTERVAL MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="gpsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header"><h5>GPS Refresh Interval</h5></div>
+
+      <div class="modal-body">
+        <input id="gps_interval" class="form-control" placeholder="Seconds (e.g., 10)">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="saveGPS()">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================= -->
+<!-- SOS RETRY MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="sosRetryModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header"><h5>SOS Retry Count</h5></div>
+
+      <div class="modal-body">
+        <input id="sos_retry" class="form-control" placeholder="Retry Attempts (e.g., 3)">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="saveSOSRetry()">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========================= -->
+<!-- RESTORE BACKUP MODAL -->
+<!-- ========================= -->
+<div class="modal fade" id="restoreModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-history"></i> Restore From Backup</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted small">⚠ Restoring will replace the current database.</p>
+
+        <label class="form-label">Select Backup File</label>
+        <select id="restoreFile" class="form-select">
+            <option value="">Loading...</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button id="restoreBtn" class="btn btn-danger">
+          <i class="fas fa-undo"></i> Restore Database
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.list-group-item-action:hover { background:#ffe6f2; }
+#sysAlert { margin-top:15px; }
+</style>
+
+
+<script>
+// UNIVERSAL SETTINGS SAVER
+function showAlert(msg, type="success"){
+    document.getElementById("sysAlert").innerHTML =
+        `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+async function toggleSetting(settingName){
+    const res = await fetch("/admin/toggle-setting", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ setting: settingName })
+    });
+    const data = await res.json();
+    showAlert(data.message);
+}
+
+async function changePassword(){
+    let p1 = newPass.value;
+    let p2 = confirmPass.value;
+
+    if(p1.length < 4) return showAlert("Password too short", "danger");
+    if(p1 !== p2) return showAlert("Passwords do not match", "danger");
+
+    const res = await fetch("/admin/change-password", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ password:p1 })
+    });
+
+    showAlert("Password updated");
+}
+
+async function saveSMTP(){
+    const res = await fetch("/admin/save-smtp", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            host:smtp_host.value,
+            port:smtp_port.value,
+            user:smtp_user.value,
+            pass:smtp_pass.value
+        })
+    });
+    showAlert("SMTP updated");
+}
+
+async function saveSMS(){
+    const res = await fetch("/admin/save-sms", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            api:sms_api.value,
+            sender:sms_sender.value
+        })
+    });
+    showAlert("SMS settings saved");
+}
+
+async function saveGPS(){
+    const res = await fetch("/admin/save-gps", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ interval:gps_interval.value })
+    });
+    showAlert("GPS interval updated");
+}
+
+async function saveSOSRetry(){
+    const res = await fetch("/admin/save-sos-retry", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ retry:sos_retry.value })
+    });
+    showAlert("SOS retry settings updated");
+}
+
+async function backupDatabase(){
+    const res = await fetch("/admin/backup-db");
+    showAlert("Database backup created successfully!");
+}
+
+async function cleanOldMedia(){
+    const res = await fetch("/admin/clean-media");
+    showAlert("Old media cleaned successfully");
+}
+
+async function forceLogout(){
+    const res = await fetch("/admin/force-logout");
+    showAlert("All users logged out");
+}
+
+// LOAD BACKUP LIST WHEN MODAL OPENS
+document.getElementById("restoreModal").addEventListener("shown.bs.modal", async () => {
+    const select = document.getElementById("restoreFile");
+    select.innerHTML = `<option>Loading...</option>`;
+
+    const res = await fetch("/admin/list-backups");
+    const data = await res.json();
+
+    if (!data.files.length) {
+        select.innerHTML = `<option>No backups found</option>`;
+        return;
+    }
+
+    select.innerHTML = `<option value="">-- Select Backup File --</option>`;
+    data.files.forEach(f => {
+        select.innerHTML += `<option value="${f}">${f}</option>`;
+    });
+});
+
+
+// RESTORE DATABASE
+document.getElementById("restoreBtn").addEventListener("click", async () => {
+    const filename = document.getElementById("restoreFile").value;
+
+    if (!filename) {
+        showAlert("Please select a backup file.", "danger");
+        return;
+    }
+
+    if (!confirm("⚠ Are you sure? This will overwrite your current database.")) {
+        return;
+    }
+
+    let btn = document.getElementById("restoreBtn");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Restoring...`;
+
+    const res = await fetch("/admin/restore-db", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `filename=${encodeURIComponent(filename)}`
+    });
+
+    const data = await res.json();
+
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-undo"></i> Restore Database`;
+
+    if (data.error) {
+        showAlert(data.error, "danger");
+        return;
+    }
+
+    showAlert(data.message, "success");
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,691 @@
+{% extends "user/base.html" %}
+{% block title %}Guardian Information{% endblock %}
+
+{% block content %}
+
+<!-- PAGE HEADER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-3" style="color: var(--primary-pink);">
+            <i class="fas fa-user-shield"></i> Guardian Details
+        </h2>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- ROW 1: PRIMARY GUARDIAN + QUICK ACTIONS -->
+<!-- ================================ -->
+<div class="row">
+
+    <!-- LEFT : PRIMARY GUARDIAN -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-contacts"></i> Emergency Contacts
+                </h5>
+
+                <div class="alert alert-emergency p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+
+                        <!-- LEFT SIDE DETAILS -->
+                        <div style="flex: 1;">
+                            <h6><i class="fas fa-phone-alt"></i> Primary Guardian</h6>
+
+                            <div class="guardian-info">
+
+                                <p class="mb-1"><strong>Name:</strong></p>
+                                <h5 class="text-white">{{ user.guardian_name or 'Not Provided' }}</h5>
+
+                                <p class="mb-1 mt-3"><strong>Phone Number:</strong></p>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h5 class="m-0 text-white">{{ user.guardian_no }}</h5>
+                                    {% if user.guardian_no %}
+                                    <a href="tel:{{ user.guardian_no }}" class="btn btn-light btn-sm rounded-circle">
+                                        <i class="fas fa-phone text-success"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+
+                                <p class="mb-1 mt-3"><strong>Email:</strong></p>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h5 class="m-0 text-white">{{ user.guardian_email or 'Not Provided' }}</h5>
+                                    {% if user.guardian_email %}
+                                    <a href="mailto:{{ user.guardian_email }}" class="btn btn-light btn-sm rounded-circle">
+                                        <i class="fas fa-envelope text-primary"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- RIGHT SIDE : UPDATE BUTTON -->
+                        <div class="ms-3">
+                            <button class="btn btn-outline-light"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editPrimaryModal">
+                                <i class="fas fa-edit"></i> Update
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT : QUICK ACTIONS -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+
+                <h6 style="color: var(--secondary-blue);">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </h6>
+
+                <div class="d-grid gap-2">
+
+                    <button id="quickAddBtn" class="btn btn-outline-pink text-start mb-2"
+                            data-bs-toggle="modal" data-bs-target="#addGuardianModal">
+                        <i class="fas fa-user-plus"></i> Add New Contact
+                    </button>
+
+                    <button id="quickHistoryBtn" class="btn btn-outline-pink text-start mb-2"
+                            data-bs-toggle="modal" data-bs-target="#alertHistoryModal">
+                        <i class="fas fa-history"></i> View Alert History
+                    </button>
+
+                    <button id="quickNotifBtn" class="btn btn-outline-pink text-start mb-2"
+                            data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
+                        <i class="fas fa-cog"></i> Notification Settings
+                    </button>
+
+                    <button id="quickLocationBtn" class="btn btn-outline-pink text-start"
+                            data-bs-toggle="modal" data-bs-target="#locationSettingsModal">
+                        <i class="fas fa-share-alt"></i> Share Location Settings
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================================ -->
+<!-- ROW 2 : ADDITIONAL CONTACTS -->
+<!-- ================================ -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card p-3">
+
+            <h6 style="color: var(--secondary-blue);">
+                <i class="fas fa-users"></i> Additional Contacts
+            </h6>
+
+            <div class="list-group mt-3" id="guardiansList">
+
+                {% if guardians %}
+                {% for guardian in guardians %}
+                <div class="list-group-item d-flex justify-content-between align-items-center"
+                     data-guardian-id="{{ guardian.id }}" data-email="{{ guardian.email }}">
+
+                    <div>
+                        <h6 class="mb-1 guardian-name">{{ guardian.name }}</h6>
+
+                        <p class="mb-1 text-muted guardian-phone d-flex align-items-center gap-2">
+                            {{ guardian.phone }}
+                            <a href="tel:{{ guardian.phone }}" class="btn btn-outline-success btn-sm rounded-circle">
+                                <i class="fas fa-phone"></i>
+                            </a>
+                        </p>
+
+                        {% if guardian.email %}
+                        <p class="mb-1 text-muted guardian-email d-flex align-items-center gap-2">
+                            {{ guardian.email }}
+                            <a href="mailto:{{ guardian.email }}" class="btn btn-outline-primary btn-sm rounded-circle">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </p>
+                        {% endif %}
+
+                        <small class="text-muted guardian-rel">{{ guardian.relationship }}</small>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-outline-primary btn-sm edit-guardian-btn"
+                                data-id="{{ guardian.id }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <button class="btn btn-outline-danger btn-sm delete-guardian-btn"
+                                data-id="{{ guardian.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> No additional guardians added yet.
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- MODALS — placed OUTSIDE CARDS to avoid Bootstrap blocking -->
+<!-- ================================ -->
+
+<!-- ADD GUARDIAN MODAL -->
+<div class="modal fade" id="addGuardianModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--primary-pink);"><i class="fas fa-user-plus"></i> Add New Guardian</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="addGuardianForm">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" name="phone" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Relationship</label>
+            <select name="relationship" class="form-select" required>
+              <option value="">Select Relationship</option>
+              <option>Parent</option>
+              <option>Sibling</option>
+              <option>Friend</option>
+              <option>Relative</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email (optional)</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="addGuardianSubmit" class="btn btn-pink">Add Guardian</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT GUARDIAN MODAL -->
+<div class="modal fade" id="editGuardianModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--primary-pink);"><i class="fas fa-edit"></i> Edit Guardian</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="editGuardianForm">
+            <input type="hidden" id="editGuardianId">
+
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="editName" class="form-control">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <input type="text" id="editPhone" class="form-control">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Relationship</label>
+                <select id="editRelationship" class="form-select">
+                    <option>Parent</option>
+                    <option>Sibling</option>
+                    <option>Spouse</option>
+                    <option>Friend</option>
+                    <option>Relative</option>
+                    <option>Other</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" id="editEmail" class="form-control">
+            </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-pink" onclick="saveEditedGuardian()">Save Changes</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PRIMARY GUARDIAN -->
+<div class="modal fade" id="editPrimaryModal">
+  <div class="modal-dialog">
+    <form id="editPrimaryForm" class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--primary-pink);">
+          <i class="fas fa-edit"></i> Edit Guardian Info
+        </h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="mb-3">
+          <label class="form-label">Guardian Name</label>
+          <input type="text" name="guardian_name" class="form-control"
+                 value="{{ user.guardian_name }}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Guardian Phone</label>
+          <input type="text" id="primaryPhoneInput" name="guardian_no" class="form-control"
+                 value="{{ user.guardian_no }}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Guardian Email</label>
+          <input type="email" name="guardian_email" class="form-control"
+                 value="{{ user.guardian_email }}">
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="savePrimaryBtn" type="button" class="btn btn-pink">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ALERT HISTORY MODAL -->
+<div class="modal fade" id="alertHistoryModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header text-white"
+           style="background: linear-gradient(45deg,#ff4b8a,#0066ff);">
+        <h5 class="modal-title"><i class="fas fa-history me-1"></i> Alert History</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted small">Previous emergency alerts:</p>
+        <ul id="alertList" class="list-group"></ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION SETTINGS MODAL -->
+<div class="modal fade" id="notificationSettingsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--primary-pink);">
+          <i class="fas fa-cog"></i> Notification Settings
+        </h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="notifSettingsForm">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="enableSMS" checked>
+            <label class="form-check-label">Enable SMS Notifications</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="enableEmail">
+            <label class="form-check-label">Enable Email Notifications</label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="enableCalls" checked>
+            <label class="form-check-label">Enable Emergency Calls</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="saveNotifSettings" class="btn btn-pink">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE LOCATION MODAL -->
+<div class="modal fade" id="locationSettingsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--primary-pink);">
+          <i class="fas fa-share-alt"></i> Share Location Settings
+        </h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted">Control how your GPS location is shared:</p>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="shareAlways" checked>
+          <label class="form-check-label">Always share during emergencies</label>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="shareManual">
+          <label class="form-check-label">Allow manual location sharing</label>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="saveLocationSettings" class="btn btn-pink">Save Settings</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.guardian-info { padding: 10px 0; }
+.list-group-item { border-radius: 8px; margin-bottom: 8px; }
+.alert-emergency {
+    background: linear-gradient(135deg,#ff6b6b,#ee5a24);
+    color:white;
+    border-radius:10px;
+}
+.btn-pink{
+    background:#e83e8c;
+    color:white;
+    border-radius:25px;
+}
+.btn-pink:hover{ background:#d61e73; }
+</style>
+
+<script>
+/* Page JS: handles Add / Edit / Delete and Quick Actions interactivity.
+   Uses fetch() to call backend endpoints. Adjust routes if your backend differs.
+*/
+
+// Helper: show alert-like notification
+function showNotification(message, type='success') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alert.style.zIndex = '2000';
+    alert.innerHTML = `${message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.append(alert);
+    setTimeout(()=> { try { alert.remove(); } catch(e){} }, 3500);
+}
+
+// TEST EMERGENCY
+function testEmergency() {
+    if (confirm('This will send a test alert to your guardians. Continue?')) {
+        showNotification('Test alert sent to all guardians!', 'success');
+    }
+}
+
+/* ---------- ADD GUARDIAN ---------- */
+document.getElementById('addGuardianSubmit')?.addEventListener('click', async function(){
+    const form = document.getElementById('addGuardianForm');
+    if (!form.reportValidity) { } // fallback
+    if (!form.checkValidity()) return form.reportValidity();
+
+    const data = {
+        name: form.name.value.trim(),
+        phone: form.phone.value.trim(),
+        relationship: form.relationship.value.trim(),
+        email: form.email.value ? form.email.value.trim() : null
+    };
+
+    try {
+        const res = await fetch('/user/add-guardian', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (res.ok && json.message) {
+            showNotification(json.message, 'success');
+            // close modal
+            const modalEl = document.getElementById('addGuardianModal');
+            const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            bsModal.hide();
+
+            // Add newly added guardian to the DOM if API returns id (optimistic)
+            // Easiest: reload page so DB and UI stay consistent
+            setTimeout(()=> location.reload(), 800);
+        } else {
+            showNotification(json.error || 'Failed to add guardian', 'danger');
+        }
+    } catch (err) {
+        console.error(err);
+        showNotification('Server error while adding guardian.', 'danger');
+    }
+});
+
+/* ---------- DELETE GUARDIAN ---------- */
+document.querySelectorAll('.delete-guardian-btn').forEach(btn => {
+    btn.addEventListener('click', async function(){
+        const id = this.dataset.id;
+        if (!confirm('Are you sure you want to delete this guardian?')) return;
+        try {
+            const res = await fetch(`/user/delete-guardian/${id}`, { method: 'POST' });
+            const json = await res.json();
+            if (res.ok && json.message) {
+                showNotification(json.message, 'success');
+                // remove element
+                const row = document.querySelector(`[data-guardian-id="${id}"]`);
+                if (row) row.remove();
+            } else {
+                showNotification(json.error || 'Failed to delete guardian', 'danger');
+            }
+        } catch (err) {
+            console.error(err);
+            showNotification('Server error while deleting guardian.', 'danger');
+        }
+    });
+});
+
+/* ---------- EDIT GUARDIAN (open modal prefilled) ---------- */
+document.querySelectorAll('.edit-guardian-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+        const id = this.dataset.id;
+        const container = document.querySelector(`[data-guardian-id="${id}"]`);
+        if (!container) return;
+
+        // read values from DOM
+        const name = container.querySelector('.guardian-name')?.textContent?.trim() || '';
+        const phone = container.querySelector('.guardian-phone')?.textContent?.trim() || '';
+        const rel = container.querySelector('.guardian-rel')?.textContent?.trim() || '';
+
+        // fill modal
+        document.getElementById('editGuardianId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editPhone').value = phone;
+        document.getElementById('editRelationship').value = rel;
+        document.getElementById('editEmail').value = container.dataset.email || '';
+
+        // show modal
+        const modalEl = document.getElementById('editGuardianModal');
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    });
+});
+
+/* ---------- SAVE EDITED GUARDIAN ---------- */
+function saveEditedGuardian() {
+    const id = document.getElementById('editGuardianId').value;
+    const name = document.getElementById('editName').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const relationship = document.getElementById('editRelationship').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+
+    fetch(`/user/update-guardian/${id}`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, relationship, email })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.message) {
+            showNotification(data.message, "success");
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showNotification(data.error || "Update failed", "danger");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showNotification("Server error while updating guardian.", "danger");
+    });
+}
+
+/* ---------- UPDATE PRIMARY GUARDIAN ---------- */
+document.getElementById("savePrimaryBtn")?.addEventListener("click", async () => {
+
+    const data = {
+        guardian_name: document.querySelector("input[name='guardian_name']").value.trim(),
+        guardian_no: document.querySelector("input[name='guardian_no']").value.trim(),
+        guardian_email: document.querySelector("input[name='guardian_email']").value.trim()
+    };
+
+    const res = await fetch("/user/update-primary-guardian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const json = await res.json();
+
+    if (json.message) {
+        showNotification(json.message, "success");
+
+        // Close modal
+        bootstrap.Modal.getInstance(
+            document.getElementById("editPrimaryModal")
+        ).hide();
+
+        // Refresh display
+        setTimeout(() => location.reload(), 600);
+    } else {
+        showNotification(json.error || "Update failed", "danger");
+    }
+});
+
+/* ---------- SETTINGS (local previews) ---------- */
+document.getElementById('saveNotifSettings')?.addEventListener('click', function(){
+    showNotification('Notification settings saved successfully!', 'success');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('notificationSettingsModal'));
+    if (modal) modal.hide();
+});
+
+document.getElementById('saveLocationSettings')?.addEventListener('click', function(){
+    showNotification('Location sharing preferences updated!', 'success');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('locationSettingsModal'));
+    if (modal) modal.hide();
+});
+
+function openEditGuardianModal(id, name, phone, relationship, email) {
+    // Fill modal fields
+    document.getElementById("editGuardianId").value = id;
+    document.getElementById("editName").value = name;
+    document.getElementById("editPhone").value = phone;
+    document.getElementById("editRelationship").value = relationship;
+    document.getElementById("editEmail").value = email || "";
+
+    // Open modal
+    var modal = new bootstrap.Modal(document.getElementById("editGuardianModal"));
+    modal.show();
+}
+
+
+async function saveEditedGuardian() {
+    const id = document.getElementById("editGuardianId").value;
+
+    const data = {
+        name: document.getElementById("editName").value,
+        phone: document.getElementById("editPhone").value,
+        relationship: document.getElementById("editRelationship").value,
+        email: document.getElementById("editEmail").value
+    };
+
+    const response = await fetch(`/user/update-guardian/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+        alert("Guardian updated successfully!");
+
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById("editGuardianModal")).hide();
+
+        // Refresh page to show new details
+        location.reload();
+    } else {
+        alert(result.error || "Failed to update guardian.");
+    }
+}
+
+document.getElementById("quickHistoryBtn").addEventListener("click", async () => {
+
+    const list = document.getElementById("alertList");
+    list.innerHTML = `<li class="list-group-item text-center text-muted">Loading...</li>`;
+
+    const res = await fetch("/user/alert-history");
+    const alerts = await res.json();
+
+    list.innerHTML = "";
+
+    if (alerts.length === 0) {
+        list.innerHTML = `<li class="list-group-item text-center text-muted">No alert history found.</li>`;
+        return;
+    }
+
+    alerts.forEach(a => {
+        list.innerHTML += `
+            <li class="list-group-item">
+                <i class="fas fa-bell text-danger me-2"></i>
+                <strong>${a.alert_type}</strong> alert on <strong>${a.timestamp}</strong>
+                - ${a.status}
+            </li>
+        `;
+    });
+});
+
+
+</script>
+
+{% endblock %}

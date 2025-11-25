@@ -1,0 +1,86 @@
+{% extends "user/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4" style="color: var(--primary-pink);">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-video fa-3x mb-3"></i>
+            <h3>{{ video_count }}</h3>
+            <p>Safety Videos Available</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-shield-alt fa-3x mb-3"></i>
+            <h3>24/7</h3>
+            <p>Protection Active</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-phone-alt fa-3x mb-3"></i>
+            <h3>{{ user.guardian_no }}</h3>
+            <p>Guardian Contact</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="startLiveStream()">
+            <i class="fas fa-broadcast-tower fa-2x mb-2"></i><br>
+            Live Streaming
+        </button>
+    </div>
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="viewMap()">
+            <i class="fas fa-map-marked-alt fa-2x mb-2"></i><br>
+            View Map
+        </button>
+    </div>
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="sendEmergencyAlert()">
+            <i class="fas fa-bell fa-2x mb-2"></i><br>
+            Emergency Alert
+        </button>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-user"></i> Profile Information
+                </h5>
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        {% if user.profile_pic %}
+                        <img src="{{ url_for('static', filename='uploads/profile_pics/' + user.profile_pic) }}" 
+                             class="profile-pic" alt="Profile Picture">
+                        {% else %}
+                        <img src="https://via.placeholder.com/150" class="profile-pic" alt="Default Profile">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <p><strong>Name:</strong> {{ user.name }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Phone:</strong> {{ user.phone }}</p>
+                        <p><strong>Gender:</strong> {{ user.gender }}</p>
+                        <p><strong>Address:</strong> {{ user.address }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

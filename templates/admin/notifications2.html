@@ -1,0 +1,682 @@
+
+{% extends "admin/base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4" style="color: var(--primary-pink);">
+            <i class="fas fa-bell"></i> Emergency Notifications
+        </h2>
+    </div>
+</div>
+
+<!-- Live Stream Modal -->
+<div class="modal fade" id="liveStreamModal" tabindex="-1" aria-labelledby="liveStreamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-broadcast-tower"></i> Live Stream - <span id="streamUserName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopAdminCamera()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="camera-container text-center">
+                            <video id="adminLiveCamera" autoplay playsinline style="max-width: 100%; border-radius: 10px; background: #000;"></video>
+                            <div class="camera-controls mt-3">
+                                <button id="adminStartCamera" class="btn btn-pink me-2" onclick="startAdminCamera()">
+                                    <i class="fas fa-play"></i> Start Stream
+                                </button>
+                                <button id="adminStopCamera" class="btn btn-secondary me-2" onclick="stopAdminCamera()" disabled>
+                                    <i class="fas fa-stop"></i> Stop Stream
+                                </button>
+                                <button id="adminCapturePhoto" class="btn btn-blue me-2" onclick="captureAdminPhoto()" disabled>
+                                    <i class="fas fa-camera"></i> Capture
+                                </button>
+                                <button class="btn btn-warning" onclick="startRecording()" id="startRecordBtn">
+                                    <i class="fas fa-record-vinyl"></i> Record
+                                </button>
+                            </div>
+                            <div class="photo-preview mt-3">
+                                <canvas id="adminPhotoCanvas" style="display: none; max-width: 100%; border-radius: 10px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stream-info-card">
+                            <h6 style="color: var(--secondary-blue);">
+                                <i class="fas fa-info-circle"></i> Stream Information
+                            </h6>
+                            <div class="stream-details">
+                                <p><strong>User:</strong> <span id="infoUserName">-</span></p>
+                                <p><strong>Status:</strong> <span id="streamStatus" class="badge bg-secondary">Inactive</span></p>
+                                <p><strong>Duration:</strong> <span id="streamDuration">00:00</span></p>
+                                <p><strong>Recording:</strong> <span id="recordingStatus" class="badge bg-secondary">No</span></p>
+                            </div>
+                            
+                            <h6 class="mt-4" style="color: var(--primary-pink);">
+                                <i class="fas fa-map-marker-alt"></i> Location Details
+                            </h6>
+                            <div id="streamLocationInfo">
+                                <p class="text-muted">Location data will appear here when available</p>
+                            </div>
+                            
+                            <h6 class="mt-4" style="color: var(--secondary-blue);">
+                                <i class="fas fa-history"></i> Quick Actions
+                            </h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-pink btn-sm" onclick="requestUserLocation()">
+                                    <i class="fas fa-location-arrow"></i> Get Location
+                                </button>
+                                <button class="btn btn-outline-pink btn-sm" onclick="sendMessageToUser()">
+                                    <i class="fas fa-comment"></i> Send Message
+                                </button>
+                                <button class="btn btn-outline-pink btn-sm" onclick="callEmergencyServices()">
+                                    <i class="fas fa-phone-alt"></i> Call Emergency
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recording List -->
+                <div class="recordings-section mt-4">
+                    <h6 style="color: var(--primary-pink);">
+                        <i class="fas fa-video"></i> Recent Recordings
+                    </h6>
+                    <div class="recordings-list">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Recordings will appear here when you start recording the stream.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if notifications %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Message</th>
+                                <th>Location</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notification in notifications %}
+                            <tr class="{% if notification.status == 'active' %}table-warning{% endif %}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if notification.user.profile_pic %}
+                                        <img src="{{ url_for('static', filename='uploads/profile_pics/' + notification.user.profile_pic) }}" 
+                                             class="rounded-circle me-2" width="40" height="40" alt="Profile">
+                                        {% else %}
+                                        <img src="https://via.placeholder.com/40" class="rounded-circle me-2" width="40" height="40" alt="Profile">
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ notification.user.name }}</strong><br>
+                                            <small class="text-muted">{{ notification.user.phone }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ notification.message }}</td>
+                                <td>
+                                    {% if notification.location and notification.location != 'Unknown' %}
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewOnMap('{{ notification.location }}')">
+                                        <i class="fas fa-map-marker-alt"></i> View
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">Unknown</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if notification.status == 'active' else 'success' }}">
+                                        {{ notification.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin_user_details', user_id=notification.user.id) }}" 
+                                           class="btn btn-blue btn-sm">
+                                            <i class="fas fa-eye"></i> Details
+                                        </a>
+                                        <button class="btn btn-pink btn-sm" 
+                                                onclick="startLiveStream('{{ notification.user.id }}', '{{ notification.user.name }}', '{{ notification.location }}')"
+                                                data-bs-toggle="modal" data-bs-target="#liveStreamModal">
+                                            <i class="fas fa-camera"></i> Live Stream
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5>No Notifications</h5>
+                    <p class="text-muted">No emergency notifications at this time.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-map"></i> User Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="notificationMap" style="height: 400px; border-radius: 10px;"></div>
+                <div class="mt-3">
+                    <p><strong>Coordinates:</strong> <span id="mapCoordinates"></span></p>
+                    <p><strong>Address:</strong> <span id="mapAddress">Loading...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.camera-container {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.stream-info-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    height: 100%;
+}
+
+.recordings-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.recording-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.recording-item:hover {
+    background: #f8f9fa;
+}
+
+.stream-active {
+    border-left: 4px solid var(--primary-pink);
+}
+
+.recording-active {
+    animation: recordingPulse 1s infinite;
+}
+
+@keyframes recordingPulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(232, 62, 140, 0.1);
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+</style>
+
+<script>
+// Admin Camera Variables
+let adminCameraStream = null;
+let isAdminCameraActive = false;
+let recordingStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let streamTimer = null;
+let streamStartTime = null;
+let currentStreamUser = null;
+
+// Map Variables
+let notificationMap = null;
+
+// Live Stream Functions
+function startLiveStream(userId, userName, location) {
+    currentStreamUser = { id: userId, name: userName, location: location };
+    
+    // Update modal title and info
+    document.getElementById('streamUserName').textContent = userName;
+    document.getElementById('infoUserName').textContent = userName;
+    
+    // Update location info
+    const locationInfo = document.getElementById('streamLocationInfo');
+    if (location && location !== 'Unknown') {
+        locationInfo.innerHTML = `
+            <p><strong>Last Known Location:</strong></p>
+            <p class="small">${location}</p>
+            <button class="btn btn-sm btn-outline-primary" onclick="viewOnMap('${location}')">
+                <i class="fas fa-map"></i> View on Map
+            </button>
+        `;
+    } else {
+        locationInfo.innerHTML = `
+            <p class="text-warning">
+                <i class="fas fa-exclamation-triangle"></i> Location not available
+            </p>
+            <button class="btn btn-sm btn-outline-warning" onclick="requestUserLocation()">
+                <i class="fas fa-location-arrow"></i> Request Location
+            </button>
+        `;
+    }
+    
+    // Reset stream status
+    updateStreamStatus('Ready to start');
+    
+    // In a real application, you would connect to the user's camera stream
+    // For demo purposes, we'll use the admin's camera
+    console.log(`Requesting live stream from user: ${userName} (ID: ${userId})`);
+}
+
+function startAdminCamera() {
+    const video = document.getElementById('adminLiveCamera');
+    const startBtn = document.getElementById('adminStartCamera');
+    const stopBtn = document.getElementById('adminStopCamera');
+    const captureBtn = document.getElementById('adminCapturePhoto');
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: true 
+        })
+        .then(function(stream) {
+            adminCameraStream = stream;
+            video.srcObject = stream;
+            isAdminCameraActive = true;
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            captureBtn.disabled = false;
+            document.getElementById('startRecordBtn').disabled = false;
+            
+            // Start stream timer
+            streamStartTime = new Date();
+            updateStreamTimer();
+            streamTimer = setInterval(updateStreamTimer, 1000);
+            
+            updateStreamStatus('Active');
+            showNotification('Live stream started successfully', 'success');
+        })
+        .catch(function(error) {
+            console.error('Camera error:', error);
+            showNotification('Error accessing camera: ' + error.message, 'danger');
+        });
+    } else {
+        showNotification('Camera not supported in this browser', 'warning');
+    }
+}
+
+function stopAdminCamera() {
+    const video = document.getElementById('adminLiveCamera');
+    const startBtn = document.getElementById('adminStartCamera');
+    const stopBtn = document.getElementById('adminStopCamera');
+    const captureBtn = document.getElementById('adminCapturePhoto');
+    const canvas = document.getElementById('adminPhotoCanvas');
+    
+    // Stop recording if active
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    
+    // Stop camera stream
+    if (adminCameraStream) {
+        adminCameraStream.getTracks().forEach(track => track.stop());
+        adminCameraStream = null;
+    }
+    
+    if (video.srcObject) {
+        video.srcObject = null;
+    }
+    
+    // Clear timer
+    if (streamTimer) {
+        clearInterval(streamTimer);
+        streamTimer = null;
+    }
+    
+    isAdminCameraActive = false;
+    canvas.style.display = 'none';
+    
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    captureBtn.disabled = true;
+    document.getElementById('startRecordBtn').disabled = true;
+    
+    updateStreamStatus('Inactive');
+    document.getElementById('streamDuration').textContent = '00:00';
+    document.getElementById('recordingStatus').textContent = 'No';
+    document.getElementById('recordingStatus').className = 'badge bg-secondary';
+    
+    showNotification('Live stream stopped', 'info');
+}
+
+function captureAdminPhoto() {
+    const video = document.getElementById('adminLiveCamera');
+    const canvas = document.getElementById('adminPhotoCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.style.display = 'block';
+    
+    // In a real app, you would send this to the server as evidence
+    showNotification('Photo captured and saved as evidence', 'success');
+}
+
+function startRecording() {
+    if (!adminCameraStream) {
+        showNotification('Please start the camera first', 'warning');
+        return;
+    }
+    
+    const recordBtn = document.getElementById('startRecordBtn');
+    
+    try {
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(adminCameraStream, {
+            mimeType: 'video/webm;codecs=vp9,opus'
+        });
+        
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = function() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            
+            // Add to recordings list
+            addRecordingToList(url);
+            
+            recordBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> Record';
+            recordBtn.classList.remove('btn-danger');
+            recordBtn.classList.add('btn-warning');
+            
+            document.getElementById('recordingStatus').textContent = 'No';
+            document.getElementById('recordingStatus').className = 'badge bg-secondary';
+        };
+        
+        mediaRecorder.start(1000); // Collect data every second
+        recordBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+        recordBtn.classList.remove('btn-warning');
+        recordBtn.classList.add('btn-danger');
+        
+        document.getElementById('recordingStatus').textContent = 'Yes';
+        document.getElementById('recordingStatus').className = 'badge bg-danger';
+        
+        showNotification('Recording started - evidence is being collected', 'info');
+        
+    } catch (error) {
+        console.error('Recording error:', error);
+        showNotification('Recording not supported: ' + error.message, 'danger');
+    }
+}
+
+function addRecordingToList(url) {
+    const recordingsList = document.querySelector('.recordings-list');
+    const recordingId = 'recording_' + Date.now();
+    
+    const recordingItem = document.createElement('div');
+    recordingItem.className = 'recording-item';
+    recordingItem.id = recordingId;
+    recordingItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Recording ${new Date().toLocaleTimeString()}</strong>
+                <br>
+                <small class="text-muted">Duration: ${document.getElementById('streamDuration').textContent}</small>
+            </div>
+            <div>
+                <a href="${url}" download="evidence-${Date.now()}.webm" class="btn btn-success btn-sm me-1">
+                    <i class="fas fa-download"></i>
+                </a>
+                <button class="btn btn-primary btn-sm me-1" onclick="playRecording('${url}')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteRecording('${recordingId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Replace the info alert with first recording
+    if (recordingsList.querySelector('.alert')) {
+        recordingsList.innerHTML = '';
+    }
+    
+    recordingsList.appendChild(recordingItem);
+}
+
+function playRecording(url) {
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.style.width = '100%';
+    
+    // Show in modal or new window
+    const modal = new bootstrap.Modal(document.getElementById('liveStreamModal'));
+    const modalBody = document.querySelector('#liveStreamModal .modal-body');
+    const originalContent = modalBody.innerHTML;
+    
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <h5>Playback Recording</h5>
+            <div class="mt-3">
+                ${video.outerHTML}
+            </div>
+            <button class="btn btn-pink mt-3" onclick="restoreStreamView()">
+                <i class="fas fa-arrow-left"></i> Back to Live Stream
+            </button>
+        </div>
+    `;
+    
+    window.restoreStreamView = function() {
+        modalBody.innerHTML = originalContent;
+    };
+}
+
+function deleteRecording(recordingId) {
+    const recordingElement = document.getElementById(recordingId);
+    if (recordingElement) {
+        recordingElement.remove();
+        showNotification('Recording deleted', 'info');
+    }
+}
+
+function updateStreamTimer() {
+    if (streamStartTime) {
+        const now = new Date();
+        const diff = Math.floor((now - streamStartTime) / 1000);
+        const minutes = Math.floor(diff / 60);
+        const seconds = diff % 60;
+        document.getElementById('streamDuration').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+function updateStreamStatus(status) {
+    const statusElement = document.getElementById('streamStatus');
+    statusElement.textContent = status;
+    
+    if (status === 'Active') {
+        statusElement.className = 'badge bg-success';
+    } else if (status === 'Ready to start') {
+        statusElement.className = 'badge bg-warning';
+    } else {
+        statusElement.className = 'badge bg-secondary';
+    }
+}
+
+// Location and Map Functions
+function viewOnMap(location) {
+    if (!location || location === 'Unknown') {
+        showNotification('Location data not available', 'warning');
+        return;
+    }
+    
+    // Parse coordinates (assuming format "lat, lng")
+    const coords = location.split(',').map(coord => parseFloat(coord.trim()));
+    if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
+        showNotification('Invalid location format', 'danger');
+        return;
+    }
+    
+    // Initialize map if not already done
+    if (!notificationMap) {
+        notificationMap = L.map('notificationMap').setView(coords, 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(notificationMap);
+    } else {
+        notificationMap.setView(coords, 15);
+    }
+    
+    // Clear existing markers
+    notificationMap.eachLayer(function(layer) {
+        if (layer instanceof L.Marker) {
+            notificationMap.removeLayer(layer);
+        }
+    });
+    
+    // Add marker for user location
+    L.marker(coords).addTo(notificationMap)
+        .bindPopup('User Emergency Location')
+        .openPopup();
+    
+    // Add circle for area
+    L.circle(coords, {
+        color: 'red',
+        fillColor: '#f03',
+        fillOpacity: 0.2,
+        radius: 500
+    }).addTo(notificationMap);
+    
+    // Update coordinates display
+    document.getElementById('mapCoordinates').textContent = location;
+    
+    // Show map modal
+    const mapModal = new bootstrap.Modal(document.getElementById('mapModal'));
+    mapModal.show();
+}
+
+function requestUserLocation() {
+    // In a real application, this would send a push notification to the user
+    // requesting their current location
+    showNotification('Location request sent to user', 'info');
+    
+    // Simulate response after 3 seconds
+    setTimeout(() => {
+        // Simulate getting a new location
+        const newLocation = `${(Math.random() * 0.02 + 28.6139).toFixed(6)}, ${(Math.random() * 0.02 + 77.2090).toFixed(6)}`;
+        document.getElementById('streamLocationInfo').innerHTML = `
+            <p><strong>Updated Location:</strong></p>
+            <p class="small">${newLocation}</p>
+            <button class="btn btn-sm btn-outline-primary" onclick="viewOnMap('${newLocation}')">
+                <i class="fas fa-map"></i> View on Map
+            </button>
+        `;
+        showNotification('User location updated successfully', 'success');
+    }, 3000);
+}
+
+function sendMessageToUser() {
+    const message = prompt('Enter message to send to user:');
+    if (message) {
+        // In real app, send via push notification or SMS
+        showNotification(`Message sent to ${currentStreamUser.name}: "${message}"`, 'success');
+    }
+}
+
+function callEmergencyServices() {
+    if (confirm('Call emergency services? This will contact local police and ambulance services.')) {
+        // In real app, initiate emergency call
+        showNotification('Emergency services notified. Calling local authorities...', 'danger');
+        
+        // Simulate call process
+        setTimeout(() => {
+            showNotification('Emergency services dispatched to location', 'success');
+        }, 2000);
+    }
+}
+
+// Utility Functions
+function showNotification(message, type) {
+    // Create notification element
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    const container = document.querySelector('.container');
+    container.insertBefore(alert, container.firstChild);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Initialize when modal opens
+document.addEventListener('DOMContentLoaded', function() {
+    const liveStreamModal = document.getElementById('liveStreamModal');
+    
+    liveStreamModal.addEventListener('hidden.bs.modal', function() {
+        stopAdminCamera();
+        currentStreamUser = null;
+    });
+});
+</script>
+
+<!-- Include Leaflet for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% endblock %}

@@ -1,0 +1,489 @@
+{% extends "admin/base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4" style="color: var(--primary-pink);">
+            <i class="fas fa-bell"></i> Emergency Notifications
+        </h2>
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- ESP32-CAM Live Stream Modal   -->
+<!-- ============================= -->
+<div class="modal fade" id="liveStreamModal" tabindex="-1" aria-labelledby="liveStreamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-video"></i> ESP32-CAM Live Stream - <span id="streamUserName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopESPCamera()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    
+                    <!-- Stream Feed Column -->
+                    <div class="col-md-8">
+                        <div class="camera-container text-center">
+                            <img id="espCamFeed" src="" alt="ESP32-CAM Feed"
+                                 style="max-width: 100%; border-radius: 10px; background: #000;" />
+                            <div class="camera-controls mt-3">
+                                <input type="text" id="espCamIP" placeholder="Enter ESP32-CAM IP (e.g., 192.168.1.120)"
+                                       class="form-control mb-2" style="max-width: 400px; display: inline-block;" />
+                                <button id="startESPCamera" class="btn btn-pink me-2" onclick="startESPCamera()">
+                                    <i class="fas fa-play"></i> Start Stream
+                                </button>
+                                <button id="stopESPCamera" class="btn btn-secondary me-2" onclick="stopESPCamera()" disabled>
+                                    <i class="fas fa-stop"></i> Stop Stream
+                                </button>
+                                <button id="captureESPPhoto" class="btn btn-blue me-2" onclick="captureESPPhoto()" disabled>
+                                    <i class="fas fa-camera"></i> Capture
+                                </button>
+                            </div>
+
+                            <div class="photo-preview mt-3">
+                                <canvas id="photoCanvas" style="display: none; max-width: 100%; border-radius: 10px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stream Info -->
+                    <div class="col-md-4">
+                        <div class="stream-info-card">
+                            <h6 style="color: var(--secondary-blue);">
+                                <i class="fas fa-info-circle"></i> Stream Information
+                            </h6>
+                            <div class="stream-details">
+                                <p><strong>User:</strong> <span id="infoUserName">-</span></p>
+                                <p><strong>Status:</strong> <span id="streamStatus" class="badge bg-secondary">Inactive</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- Notifications Table          -->
+<!-- ============================= -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+
+                {% if notifications %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Message</th>
+                                <th>Location</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for n in notifications %}
+                            <tr data-notif-id="{{ n.id }}" data-status="{{ n.status }}" class="{% if n.status == 'active' %}table-warning{% endif %}">
+                                
+                                <!-- USER COLUMN -->
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if n.user.profile_pic %}
+                                        <img src="{{ url_for('static', filename='uploads/profile_pics/' + n.user.profile_pic) }}"
+                                             class="rounded-circle me-2" width="40" height="40" alt="Profile">
+                                        {% else %}
+                                        <img src="https://via.placeholder.com/40" class="rounded-circle me-2" alt="Profile">
+                                        {% endif %}
+
+                                        <div>
+                                            <strong>{{ n.user.name }}</strong><br>
+                                            <small class="text-muted">{{ n.user.phone }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- MESSAGE -->
+                                <td style="max-width:320px; white-space:normal;">{{ n.message }}</td>
+
+                                <!-- LOCATION (clickable text instead of button) -->
+                                <td>
+                                    {% if n.location and n.location != 'Unknown' %}
+                                        <a href="javascript:void(0)" class="text-decoration-none fw-medium view-location" data-location="{{ n.location }}" title="View location">
+                                            <i class="fas fa-map-marker-alt me-1"></i> viewOnMap
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Unknown</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- TIME -->
+                                <td>{{ n.ist_time.strftime('%d-%b-%Y %I:%M %p') }}</td>
+
+                                <!-- STATUS -->
+                                <td>
+                                    <span class="badge notif-status-badge {% if n.status == 'pending' %}bg-secondary{% elif n.status == 'active' %}bg-danger{% elif n.status == 'solved' %}bg-success{% endif %}">
+                                        {{ n.status }}
+                                    </span>
+                                </td>
+
+                                <!-- ACTIONS -->
+                                <td class="d-flex gap-2 align-items-center">
+
+                                    <!-- VIEW DETAILS BUTTON (styled) -->
+                                    <a href="/admin/user/{{ n.user.id }}" class="btn btn-details btn-sm">
+                                    <i class="fas fa-user me-1"></i> Details
+                                    </a>
+
+                                    <!-- LIVE STREAM (unchanged) -->
+                                    <button class="btn btn-pink btn-sm"
+                                            onclick="startLiveStream('{{ n.user.id }}','{{ n.user.name }}','{{ n.location }}')"
+                                            data-bs-toggle="modal" data-bs-target="#liveStreamModal">
+                                        <i class="fas fa-camera"></i> Live
+                                    </button>
+
+                                    <!-- STATUS ACTIONS (dropdown) -->
+                                    <div class="dropdown">
+                                      <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="statusDropdown{{ n.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Status
+                                      </button>
+                                      <ul class="dropdown-menu" aria-labelledby="statusDropdown{{ n.id }}">
+                                        <li><a class="dropdown-item set-status" href="#" data-id="{{ n.id }}" data-status="pending">Set Pending</a></li>
+                                        <li><a class="dropdown-item set-status" href="#" data-id="{{ n.id }}" data-status="active">Set Active</a></li>
+                                        <li><a class="dropdown-item set-status" href="#" data-id="{{ n.id }}" data-status="solved">Mark Solved</a></li>
+                                      </ul>
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5>No Notifications</h5>
+                    <p class="text-muted">No emergency notifications yet.</p>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- USER DETAILS MODAL           -->
+<!-- ============================= -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="userDetailsTitle" style="color: var(--primary-pink);"><i class="fas fa-user"></i> User Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <img id="detailProfilePic" src="https://via.placeholder.com/80" class="rounded-circle" width="80" height="80" alt="Profile">
+          <div>
+            <h5 id="detailName" class="mb-0"></h5>
+            <small id="detailPhone" class="text-muted"></small><br>
+            <small id="detailEmail" class="text-muted"></small>
+          </div>
+        </div>
+
+        <hr>
+
+        <div>
+          <p><strong>Last Alert:</strong> <span id="detailLastAlert">-</span></p>
+          <p><strong>Location:</strong> <span id="detailLocation">-</span></p>
+          <p><strong>Notification Message:</strong></p>
+          <p id="detailMessage" class="small text-break"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- MAP MODAL (kept intact)      -->
+<!-- ============================= -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-map"></i> User Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="notificationMap" style="height: 400px; border-radius: 10px;"></div>
+                <div class="mt-3">
+                    <p><strong>Coordinates:</strong> <span id="mapCoordinates"></span></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+.camera-container { background:#1a1a1a; border-radius:10px; padding:15px; }
+.stream-info-card { background:#f8f9fa; border-radius:10px; padding:15px; }
+.table-hover tbody tr:hover { background-color:rgba(232,62,140,0.06); }
+
+/* Details button styling (requested) */
+.btn-details {
+  background: linear-gradient(90deg,#1e90ff,#6a5acd);
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+.btn-details:hover { transform: translateY(-1px); }
+
+/* Notification badge styling helpers */
+.notif-status-badge { text-transform:capitalize; }
+</style>
+
+<script>
+/* -------------------------
+   Helper: show notification
+   ------------------------- */
+function showNotification(message, type='info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+    alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.querySelector('.container').prepend(alert);
+    setTimeout(()=> { try { alert.remove(); } catch(e){} }, 3500);
+}
+
+/* -------------------------
+   Open User Details Modal
+   Accepts user object and notification object (both as JSON)
+   ------------------------- */
+function openUserDetailsModal(userObj, notifObj) {
+    // userObj and notifObj are passed via tojson in template
+    try {
+        const user = userObj || {};
+        const notif = notifObj || {};
+
+        document.getElementById('detailProfilePic').src = user.profile_pic ? ('/static/uploads/profile_pics/' + user.profile_pic) : 'https://via.placeholder.com/80';
+        document.getElementById('detailName').textContent = user.name || '-';
+        document.getElementById('detailPhone').textContent = user.phone || '-';
+        document.getElementById('detailEmail').textContent = user.email || '-';
+        document.getElementById('detailLastAlert').textContent = notif.created_at ? notif.created_at : '-';
+        document.getElementById('detailLocation').textContent = notif.location && notif.location !== 'Unknown' ? notif.location : 'Unknown';
+        document.getElementById('detailMessage').textContent = notif.message || '-';
+
+        // wire Mark Solved button for this notification
+        const markBtn = document.getElementById('detailMarkSolved');
+        markBtn.onclick = function() {
+            setNotificationStatus(notif.id, 'solved');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
+            if (modal) modal.hide();
+        };
+
+        // show modal
+        const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+        modal.show();
+
+    } catch (err) {
+        console.error('openUserDetailsModal error', err);
+    }
+}
+
+/* -------------------------
+   Location cell click -> open map modal (keeps map functionality)
+   ------------------------- */
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.view-location')) {
+        const el = e.target.closest('.view-location');
+        const location = el.dataset.location;
+        if (!location) return;
+        viewOnMap(location);
+    }
+});
+
+/* -------------------------
+   LEAFLET MAP HANDLING
+   ------------------------- */
+let map;
+function viewOnMap(location) {
+    const coords = location.split(',');
+    const lat = parseFloat(coords[0]);
+    const lon = parseFloat(coords[1]);
+
+    document.getElementById("mapCoordinates").textContent = lat + ", " + lon;
+    const modal = new bootstrap.Modal(document.getElementById("mapModal"));
+    modal.show();
+
+    setTimeout(() => {
+        if (!map) {
+            map = L.map('notificationMap').setView([lat, lon], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            L.marker([lat, lon]).addTo(map);
+        } else {
+            map.setView([lat, lon], 15);
+            L.marker([lat, lon]).addTo(map);
+        }
+    }, 300);
+}
+
+/* -------------------------
+   STATUS: set via dropdown or details modal
+   Will try to call backend endpoint: POST /admin/update-notification-status/<id>
+   If endpoint not present, UI updates optimistically.
+   ------------------------- */
+async function setNotificationStatus(notifId, newStatus) {
+    const row = document.querySelector(`tr[data-notif-id="${notifId}"]`);
+    if (!row) return;
+
+    // optimistic UI update
+    updateStatusBadge(row, newStatus);
+
+    // attempt server update
+    try {
+        const res = await fetch(`/admin/update-notification-status/${notifId}`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({status: newStatus})
+        });
+        if (!res.ok) {
+            // server failed — inform user (but we already updated UI)
+            const json = await res.json().catch(()=>({}));
+            showNotification(json.error || 'Server failed to update status — UI updated locally.', 'warning');
+        } else {
+            const json = await res.json().catch(()=>({}));
+            showNotification(json.message || 'Status updated', 'success');
+        }
+    } catch (err) {
+        // no backend available — already updated UI optimistically
+        console.warn('Status update request failed', err);
+        showNotification('Status updated locally (server unreachable).', 'info');
+    }
+}
+
+function updateStatusBadge(row, status) {
+    // update data-status attr
+    row.dataset.status = status;
+
+    // find badge element
+    const badge = row.querySelector('.notif-status-badge');
+    if (!badge) return;
+
+    badge.textContent = status;
+    badge.classList.remove('bg-secondary','bg-danger','bg-success');
+    if (status === 'pending') badge.classList.add('bg-secondary');
+    else if (status === 'active') badge.classList.add('bg-danger');
+    else if (status === 'solved') badge.classList.add('bg-success');
+}
+
+/* wire the dropdown "set-status" items */
+document.querySelectorAll('.set-status').forEach(function(el) {
+    el.addEventListener('click', function(e){
+        e.preventDefault();
+        const id = this.dataset.id;
+        const status = this.dataset.status;
+        if (!id || !status) return;
+        setNotificationStatus(id, status);
+    });
+});
+
+/* -------------------------
+   ESP32-CAM (unchanged functionality)
+   ------------------------- */
+let espCamURL = '';
+let espStreamActive = false;
+
+function startLiveStream(userId, userName, location) {
+    document.getElementById('streamUserName').textContent = userName;
+    document.getElementById('infoUserName').textContent = userName;
+    updateStreamStatus('Ready');
+}
+
+function startESPCamera() {
+    const ipInput = document.getElementById('espCamIP');
+    const imgFeed = document.getElementById('espCamFeed');
+    const startBtn = document.getElementById('startESPCamera');
+    const stopBtn = document.getElementById('stopESPCamera');
+    const captureBtn = document.getElementById('captureESPPhoto');
+
+    if (!ipInput.value.trim()) {
+        showNotification('Enter ESP32-CAM IP first.', 'warning');
+        return;
+    }
+
+    espCamURL = `http://${ipInput.value.trim()}/stream`;
+    imgFeed.src = espCamURL;
+    espStreamActive = true;
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    captureBtn.disabled = false;
+    updateStreamStatus('Active');
+}
+
+function stopESPCamera() {
+    const imgFeed = document.getElementById('espCamFeed');
+    const startBtn = document.getElementById('startESPCamera');
+    const stopBtn = document.getElementById('stopESPCamera');
+    const captureBtn = document.getElementById('captureESPPhoto');
+
+    imgFeed.src = '';
+    espStreamActive = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    captureBtn.disabled = true;
+    updateStreamStatus('Inactive');
+}
+
+function captureESPPhoto() {
+    if (!espStreamActive) return;
+
+    const imgFeed = document.getElementById('espCamFeed');
+    const canvas = document.getElementById('photoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = imgFeed.width;
+    canvas.height = imgFeed.height;
+    ctx.drawImage(imgFeed, 0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'block';
+}
+
+function updateStreamStatus(status) {
+    const statusEl = document.getElementById('streamStatus');
+    statusEl.textContent = status;
+
+    if (status === 'Active') statusEl.className = 'badge bg-success';
+    else if (status === 'Ready') statusEl.className = 'badge bg-warning';
+    else statusEl.className = 'badge bg-secondary';
+}
+
+/* Close ESP32 feed when modal closes */
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('liveStreamModal');
+    if (modal) modal.addEventListener('hidden.bs.modal', stopESPCamera);
+});
+</script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+{% endblock %}

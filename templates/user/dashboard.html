@@ -1,0 +1,721 @@
+{% extends "user/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+    </div>
+</div>
+
+<!-- Emergency Alert Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-emergency p-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="fas fa-bell"></i> Emergency Alert System</h5>
+                    <p class="mb-0">Voice commands activated: Say "HELP" or "DANGER" to trigger emergency alert</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <button id="voiceToggle" class="btn btn-light" onclick="toggleVoiceRecognition()">
+                            <i class="fas fa-microphone"></i> Voice: <span id="voiceStatus">OFF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div id="voiceFeedback" class="small text-light" style="display: none;">
+                        <i class="fas fa-circle text-success"></i> Listening for commands...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-video fa-3x mb-3"></i>
+            <h3>{{ video_count }}</h3>
+            <p>Safety Videos Available</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-shield-alt fa-3x mb-3"></i>
+            <h3>24/7</h3>
+            <p>Protection Active</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-phone-alt fa-3x mb-3"></i>
+            <h3>{{ user.guardian_no }}</h3>
+            <p>Guardian Contact</p>
+        </div>
+    </div>
+</div>
+
+<!-- Live Features Section -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="startLiveStream()" data-bs-toggle="modal" data-bs-target="#cameraModal">
+            <i class="fas fa-broadcast-tower fa-2x mb-2"></i><br>
+            Live Camera
+        </button>
+    </div>
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="viewMap()" data-bs-toggle="modal" data-bs-target="#mapModal">
+            <i class="fas fa-map-marked-alt fa-2x mb-2"></i><br>
+            View Map
+        </button>
+    </div>
+    <div class="col-md-4 mb-3">
+        <button class="feature-btn w-100" onclick="sendEmergencyAlert()">
+            <i class="fas fa-bell fa-2x mb-2"></i><br>
+            Emergency Alert
+        </button>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-camera"></i> Live Camera Stream
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopCamera()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="camera-container text-center">
+                    <video id="liveCamera" autoplay playsinline style="max-width: 100%; border-radius: 10px; background: #000;"></video>
+                    <div class="camera-controls mt-3">
+                        <button id="startCamera" class="btn btn-pink me-2" onclick="startCamera()">
+                            <i class="fas fa-play"></i> Start Camera
+                        </button>
+                        <button id="stopCamera" class="btn btn-secondary me-2" onclick="stopCamera()" disabled>
+                            <i class="fas fa-stop"></i> Stop Camera
+                        </button>
+                        <button id="capturePhoto" class="btn btn-blue" onclick="capturePhoto()" disabled>
+                            <i class="fas fa-camera"></i> Capture
+                        </button>
+                    </div>
+                    <div class="photo-preview mt-3">
+                        <canvas id="photoCanvas" style="display: none; max-width: 100%; border-radius: 10px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-map-marker-alt"></i> Current Location & Safe Places
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="map-container">
+                    <div id="map" style="height: 400px; border-radius: 10px; background: #f8f9fa;"></div>
+                    <div class="map-controls mt-3">
+                        <button class="btn btn-pink me-2" onclick="getCurrentLocation()">
+                            <i class="fas fa-location-arrow"></i> Get My Location
+                        </button>
+                        <button class="btn btn-blue me-2" onclick="findNearbySafePlaces()">
+                            <i class="fas fa-shield-alt"></i> Find Safe Places
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="shareLocation()">
+                            <i class="fas fa-share"></i> Share Location
+                        </button>
+                    </div>
+                    <div class="location-info mt-3">
+                        <div id="locationStatus" class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Click "Get My Location" to see your current position
+                        </div>
+                        <div id="locationDetails" style="display: none;">
+                            <h6>Your Location:</h6>
+                            <p id="address" class="mb-1"></p>
+                            <p id="coordinates" class="small text-muted"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voice Recognition Status -->
+<div id="voiceAlert" class="alert alert-warning mt-3" style="display: none;">
+    <i class="fas fa-microphone"></i> Voice recognition is active. Say "HELP" or "DANGER" for emergency alert.
+</div>
+
+<style>
+.camera-container, .map-container {
+    position: relative;
+}
+
+#liveCamera {
+    max-height: 400px;
+}
+
+.photo-preview canvas {
+    border: 2px solid var(--primary-pink);
+}
+
+#map {
+    width: 100%;
+}
+
+.voice-active {
+    background-color: #ffeb3b !important;
+    color: #333 !important;
+}
+
+.emergency-triggered {
+    animation: pulse 1s infinite;
+    background-color: #ff4444 !important;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.feature-btn {
+    background: white;
+    border: none;
+    border-radius: 15px;
+    padding: 25px 15px;
+    text-align: center;
+    color: var(--primary-pink);
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.feature-btn:hover {
+    background: var(--primary-pink);
+    color: white;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(232, 62, 140, 0.3);
+}
+</style>
+
+<script>
+// Voice Recognition Variables
+let recognition = null;
+let isListening = false;
+let voiceTimeout = null;
+
+// Camera Variables
+let cameraStream = null;
+let isCameraActive = false;
+
+// Map Variables
+let map = null;
+let userMarker = null;
+let safePlaces = [];
+
+// Voice Recognition Functions
+function initializeVoiceRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = function() {
+            console.log('Voice recognition started');
+            isListening = true;
+            updateVoiceUI(true);
+        };
+        
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Check for emergency keywords
+            const spokenText = (finalTranscript + interimTranscript).toLowerCase();
+            checkForEmergencyKeywords(spokenText);
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Microphone access denied. Please allow microphone access for voice commands.');
+            }
+            stopVoiceRecognition();
+        };
+        
+        recognition.onend = function() {
+            console.log('Voice recognition ended');
+            if (isListening) {
+                // Restart recognition if it ended unexpectedly
+                setTimeout(() => {
+                    if (isListening) {
+                        recognition.start();
+                    }
+                }, 100);
+            }
+        };
+        
+    } else {
+        alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+    }
+}
+
+function toggleVoiceRecognition() {
+    if (!isListening) {
+        startVoiceRecognition();
+    } else {
+        stopVoiceRecognition();
+    }
+}
+
+function startVoiceRecognition() {
+    if (!recognition) {
+        initializeVoiceRecognition();
+    }
+    
+    if (recognition) {
+        recognition.start();
+        showNotification('Voice recognition activated. Say "HELP" or "DANGER" for emergency.', 'info');
+    }
+}
+
+function stopVoiceRecognition() {
+    if (recognition) {
+        recognition.stop();
+    }
+    isListening = false;
+    updateVoiceUI(false);
+    showNotification('Voice recognition deactivated.', 'warning');
+}
+
+function updateVoiceUI(listening) {
+    const voiceToggle = document.getElementById('voiceToggle');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceFeedback = document.getElementById('voiceFeedback');
+    const voiceAlert = document.getElementById('voiceAlert');
+    
+    if (listening) {
+        voiceStatus.textContent = 'ON';
+        voiceToggle.classList.add('btn-success');
+        voiceToggle.classList.remove('btn-light');
+        voiceFeedback.style.display = 'block';
+        voiceAlert.style.display = 'block';
+    } else {
+        voiceStatus.textContent = 'OFF';
+        voiceToggle.classList.remove('btn-success');
+        voiceToggle.classList.add('btn-light');
+        voiceFeedback.style.display = 'none';
+        voiceAlert.style.display = 'none';
+    }
+}
+
+function checkForEmergencyKeywords(text) {
+    const emergencyKeywords = ['help', 'danger', 'emergency', 'save me', 'police', 'ambulance', 'attack'];
+    
+    for (const keyword of emergencyKeywords) {
+        if (text.includes(keyword)) {
+            triggerEmergencyFromVoice(keyword);
+            break;
+        }
+    }
+}
+
+function triggerEmergencyFromVoice(keyword) {
+    console.log(`Emergency triggered by voice: ${keyword}`);
+    
+    // Visual feedback
+    const emergencyAlert = document.querySelector('.alert-emergency');
+    emergencyAlert.classList.add('emergency-triggered');
+    
+    // Show immediate feedback
+    showNotification(`Emergency detected! Keyword: "${keyword}"`, 'danger');
+    
+    // Send emergency alert
+    sendEmergencyAlert();
+    
+    // Stop voice recognition temporarily
+    stopVoiceRecognition();
+    
+    // Remove animation after 3 seconds
+    setTimeout(() => {
+        emergencyAlert.classList.remove('emergency-triggered');
+    }, 3000);
+    
+    // Restart voice recognition after 10 seconds
+    setTimeout(() => {
+        if (!isListening) {
+            startVoiceRecognition();
+        }
+    }, 10000);
+}
+
+// Camera Functions
+function startCamera() {
+    const video = document.getElementById('liveCamera');
+    const startBtn = document.getElementById('startCamera');
+    const stopBtn = document.getElementById('stopCamera');
+    const captureBtn = document.getElementById('capturePhoto');
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        })
+        .then(function(stream) {
+            cameraStream = stream;
+            video.srcObject = stream;
+            isCameraActive = true;
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            captureBtn.disabled = false;
+            
+            showNotification('Camera started successfully', 'success');
+        })
+        .catch(function(error) {
+            console.error('Camera error:', error);
+            showNotification('Error accessing camera: ' + error.message, 'danger');
+        });
+    } else {
+        showNotification('Camera not supported in this browser', 'warning');
+    }
+}
+
+function stopCamera() {
+    const video = document.getElementById('liveCamera');
+    const startBtn = document.getElementById('startCamera');
+    const stopBtn = document.getElementById('stopCamera');
+    const captureBtn = document.getElementById('capturePhoto');
+    const canvas = document.getElementById('photoCanvas');
+    
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    if (video.srcObject) {
+        video.srcObject = null;
+    }
+    
+    isCameraActive = false;
+    canvas.style.display = 'none';
+    
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    captureBtn.disabled = true;
+    
+    showNotification('Camera stopped', 'info');
+}
+
+function capturePhoto() {
+    const video = document.getElementById('liveCamera');
+    const canvas = document.getElementById('photoCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.style.display = 'block';
+    
+    // In a real app, you would send this to the server
+    showNotification('Photo captured!', 'success');
+}
+
+// Map Functions
+function initMap() {
+    // Initialize map with default view (India)
+    map = L.map('map').setView([20.5937, 78.9629], 5);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    showNotification('Map initialized. Click "Get My Location" to see your position.', 'info');
+}
+
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        const locationStatus = document.getElementById('locationStatus');
+        locationStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting your location...';
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // Update map view
+                map.setView([lat, lng], 15);
+                
+                // Remove existing marker
+                if (userMarker) {
+                    map.removeLayer(userMarker);
+                }
+                
+                // Add new marker
+                userMarker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup('Your current location')
+                    .openPopup();
+                
+                // Add circle for accuracy
+                L.circle([lat, lng], {
+                    color: 'blue',
+                    fillColor: '#1e90ff',
+                    fillOpacity: 0.1,
+                    radius: position.coords.accuracy
+                }).addTo(map);
+                
+                // Update location info
+                updateLocationInfo(lat, lng);
+                findNearbySafePlaces(lat, lng);
+                
+                locationStatus.style.display = 'none';
+                
+                showNotification('Location found successfully!', 'success');
+            },
+            function(error) {
+                console.error('Geolocation error:', error);
+                let errorMessage = 'Error getting location: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Location access denied.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out.';
+                        break;
+                    default:
+                        errorMessage += 'Unknown error.';
+                }
+                locationStatus.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${errorMessage}`;
+                showNotification(errorMessage, 'danger');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
+        );
+    } else {
+        showNotification('Geolocation is not supported by this browser.', 'warning');
+    }
+}
+
+function updateLocationInfo(lat, lng) {
+    const locationDetails = document.getElementById('locationDetails');
+    const coordinates = document.getElementById('coordinates');
+    const address = document.getElementById('address');
+    
+    coordinates.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+    
+    // Simple reverse geocoding (in real app, use a proper geocoding service)
+    address.textContent = `Approximate location: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
+    
+    locationDetails.style.display = 'block';
+}
+
+function findNearbySafePlaces(lat, lng) {
+    if (!lat || !lng) {
+        if (userMarker) {
+            const userLatLng = userMarker.getLatLng();
+            lat = userLatLng.lat;
+            lng = userLatLng.lng;
+        } else {
+            showNotification('Please get your location first', 'warning');
+            return;
+        }
+    }
+    
+    // Clear existing safe places
+    safePlaces.forEach(place => map.removeLayer(place));
+    safePlaces = [];
+    
+    // Simulate finding nearby safe places (police stations, hospitals, etc.)
+    const safePlaceTypes = [
+        { name: 'Police Station', icon: 'fas fa-shield-alt', color: 'blue' },
+        { name: 'Hospital', icon: 'fas fa-hospital', color: 'red' },
+        { name: 'Women Help Center', icon: 'fas fa-female', color: 'pink' },
+        { name: 'Public Place', icon: 'fas fa-building', color: 'green' }
+    ];
+    
+    // Generate random nearby locations
+    for (let i = 0; i < 8; i++) {
+        const type = safePlaceTypes[Math.floor(Math.random() * safePlaceTypes.length)];
+        const offsetLat = (Math.random() - 0.5) * 0.02;
+        const offsetLng = (Math.random() - 0.5) * 0.02;
+        
+        const safeLat = lat + offsetLat;
+        const safeLng = lng + offsetLng;
+        
+        const safeIcon = L.divIcon({
+            html: `<i class="${type.icon}" style="color: ${type.color}; font-size: 20px;"></i>`,
+            className: 'safe-place-marker',
+            iconSize: [20, 20]
+        });
+        
+        const marker = L.marker([safeLat, safeLng], { icon: safeIcon })
+            .addTo(map)
+            .bindPopup(`<strong>${type.name}</strong><br>Distance: ${(Math.random() * 2 + 0.5).toFixed(1)} km`);
+        
+        safePlaces.push(marker);
+    }
+    
+    showNotification(`Found ${safePlaces.length} safe places nearby`, 'success');
+}
+
+function shareLocation() {
+    if (userMarker) {
+        const latLng = userMarker.getLatLng();
+        const locationUrl = `https://www.google.com/maps?q=${latLng.lat},${latLng.lng}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'My Current Location',
+                text: 'Here is my current location for safety tracking',
+                url: locationUrl
+            });
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(locationUrl).then(() => {
+                showNotification('Location URL copied to clipboard!', 'success');
+            });
+        }
+    } else {
+        showNotification('Please get your location first', 'warning');
+    }
+}
+
+// Emergency Alert Function
+function sendEmergencyAlert() {
+    if (confirm('Are you sure you want to send an emergency alert? This will notify your guardians and emergency services.')) {
+        // Get current location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const location = `${position.coords.latitude}, ${position.coords.longitude}`;
+                    
+                    fetch('/api/emergency', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            location: location,
+                            type: 'manual_alert'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showNotification('Emergency alert sent! Help is on the way.', 'success');
+                        
+                        // Visual feedback
+                        document.body.style.backgroundColor = '#ff4444';
+                        setTimeout(() => {
+                            document.body.style.backgroundColor = '';
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error sending alert. Please try again.', 'danger');
+                    });
+                },
+                function(error) {
+                    // If location access is denied, send without location
+                    fetch('/api/emergency', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            location: 'Unknown',
+                            type: 'manual_alert'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showNotification('Emergency alert sent! Help is on the way.', 'success');
+                    });
+                }
+            );
+        }
+    }
+}
+
+// Utility Functions
+function showNotification(message, type) {
+    // Create notification element
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    const container = document.querySelector('.container');
+    container.insertBefore(alert, container.firstChild);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard loaded');
+    
+    // Initialize map when map modal is shown
+    document.getElementById('mapModal').addEventListener('shown.bs.modal', function() {
+        if (!map) {
+            initMap();
+        }
+    });
+    
+    // Stop camera when modal is hidden
+    document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function() {
+        stopCamera();
+    });
+    
+    // Auto-start voice recognition (optional)
+    // setTimeout(() => startVoiceRecognition(), 2000);
+});
+</script>
+
+<!-- Include Leaflet CSS and JS for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% endblock %}

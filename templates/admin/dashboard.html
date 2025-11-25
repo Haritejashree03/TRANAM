@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+    </div>
+</div>
+
+<!-- TOP SUMMARY CARDS -->
+<div class="row mb-4">
+
+    <!-- Total Users -->
+    <div class="col-md-6">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-users fa-3x mb-3"></i>
+            <h3>{{ total_users }}</h3>
+            <p>Total Registered Users</p>
+        </div>
+    </div>
+
+    <!-- Total Notifications -->
+    <div class="col-md-6">
+        <div class="dashboard-card p-4 text-center">
+            <i class="fas fa-bell fa-3x mb-3"></i>
+            <h3>{{ total_notifications }}</h3>
+            <p>Total Notifications</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+
+    <!-- QUICK STATS -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-chart-line"></i> Quick Stats
+                </h5>
+                <div class="list-group">
+
+                    <div class="list-group-item">
+                        <i class="fas fa-circle text-success"></i>
+                        Active Users Today: {{ active_users_today }}
+                    </div>
+
+                    <div class="list-group-item">
+                        <i class="fas fa-circle text-warning"></i>
+                        Pending Alerts: {{ pending_alerts }}
+                    </div>
+
+                    <div class="list-group-item">
+                        <i class="fas fa-circle text-info"></i>
+                        Resolved Cases: {{ solved_cases }}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title" style="color: var(--primary-pink);">
+                    <i class="fas fa-rocket"></i> Quick Actions
+                </h5>
+
+                <div class="d-grid gap-2">
+
+                    <!-- VIEW NOTIFICATIONS -->
+                    <a href="{{ url_for('admin_notifications') }}" class="btn btn-pink">
+                        <i class="fas fa-bell"></i> View Notifications
+                    </a>
+
+                    <!-- MANAGE USERS -->
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-blue">
+                        <i class="fas fa-user-cog"></i> Manage Users
+                    </a>
+
+                    <!-- SYSTEM SETTINGS -->
+                    <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-blue">
+                        <i class="fas fa-cog"></i> System Settings
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

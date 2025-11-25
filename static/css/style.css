@@ -1,0 +1,205 @@
+:root {
+    --primary-pink: #e83e8c;
+    --secondary-blue: #007bff;
+    --light-pink: #f8f9fa;
+    --dark-pink: #d81b60;
+    --light-blue: #e3f2fd;
+}
+
+body {
+    background: linear-gradient(135deg, var(--light-pink) 0%, var(--light-blue) 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    color: var(--primary-pink) !important;
+}
+
+.btn-pink {
+    background-color: var(--primary-pink);
+    border-color: var(--primary-pink);
+    color: white;
+}
+
+.btn-pink:hover {
+    background-color: var(--dark-pink);
+    border-color: var(--dark-pink);
+    color: white;
+}
+
+.btn-blue {
+    background-color: var(--secondary-blue);
+    border-color: var(--secondary-blue);
+    color: white;
+}
+
+/* Voice Recognition Styles */
+.voice-active {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+    color: white !important;
+}
+
+.emergency-triggered {
+    animation: emergencyPulse 0.5s infinite;
+}
+
+@keyframes emergencyPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Map Styles */
+.safe-place-marker {
+    background: transparent;
+    border: none;
+}
+
+/* Camera Styles */
+.camera-container {
+    background: #000;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.photo-preview {
+    border: 2px solid var(--primary-pink);
+    border-radius: 10px;
+    padding: 5px;
+    background: white;
+}
+
+.btn-blue:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    color: white;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+}
+
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    padding: 12px;
+}
+
+.form-control:focus {
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 0 0.2rem rgba(232, 62, 140, 0.25);
+}
+
+.dashboard-card {
+    background: linear-gradient(135deg, var(--primary-pink) 0%, var(--secondary-blue) 100%);
+    color: white;
+    border-radius: 15px;
+}
+
+.feature-btn {
+    background: white;
+    border: none;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    color: var(--primary-pink);
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.feature-btn:hover {
+    background: var(--primary-pink);
+    color: white;
+    transform: scale(1.05);
+}
+
+.profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary-pink);
+}
+
+.video-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.video-card:hover {
+    transform: scale(1.02);
+}
+
+.alert-emergency {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+}
+
+/* Guardian Page Specific Styles */
+.guardian-info {
+    padding: 10px 0;
+}
+
+.stats-list {
+    font-size: 0.9rem;
+}
+
+.list-group-item {
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.alert-emergency {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+    border: none;
+    border-radius: 10px;
+}
+
+/* Modal Styling */
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-pink) 0%, var(--secondary-blue) 100%);
+    color: white;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
