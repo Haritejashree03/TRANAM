@@ -14,7 +14,6 @@ import sqlite3
 import threading
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from urllib.parse import urlencode
-CORS(app)
 
 def send_async_email(app, msg):
     with app.app_context():
@@ -48,6 +47,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Allowed file extensions for profile pictures
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
+CORS(app)
 db.init_app(app)
 
 login_manager = LoginManager()
