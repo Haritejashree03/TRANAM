@@ -33,7 +33,7 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'pavaniharitejashree@gmail.com'  # replace with your email
-app.config['MAIL_PASSWORD'] = 'cqww hsxq fxsb dizr'      # use App Password (not your real password)
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')      # use App Password (not your real password)
 app.config['MAIL_DEFAULT_SENDER'] = ('TRANAM', 'pavaniharitejashree@gmail.com')
 
 mail = Mail(app)
@@ -725,7 +725,7 @@ def admin_logout():
     flash('Admin logged out successfully', 'info')
     return redirect(url_for('admin_login'))
 
-FAST2SMS_API_KEY = "8iqlChnk3bS7ZvHNycTLYOfgG0DPtQIJpVWFUXum4s5Br1M2ExwtvnFzMJgVeQUqB28jW7sIbpTlxS9G"
+FAST2SMS_API_KEY = os.environ.get("FAST2SMS_API_KEY")
 
 def send_sms_fast2sms(phone, message):
     try:
